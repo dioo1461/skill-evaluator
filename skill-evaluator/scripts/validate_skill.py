@@ -16,7 +16,6 @@ from pathlib import Path
 
 
 ALLOWED_TOP_LEVEL = {"SKILL.md", "agents", "references", "scripts", "examples"}
-IGNORED_TOP_LEVEL = {".git"}
 REQUIRED_REFERENCES = {
     "references/scoring-guide.md",
     "references/report-format.md",
@@ -129,8 +128,6 @@ def check_frontmatter(root: Path, errors: list[str]) -> None:
 def check_top_level(root: Path, errors: list[str]) -> None:
     for child in sorted(root.iterdir()):
         name = child.name
-        if name in IGNORED_TOP_LEVEL:
-            continue
         if name.startswith("."):
             errors.append(f"{child.relative_to(root)}: hidden files are not allowed in packaged skills")
         elif name not in ALLOWED_TOP_LEVEL:
@@ -140,8 +137,6 @@ def check_top_level(root: Path, errors: list[str]) -> None:
 def check_hidden_files(root: Path, errors: list[str]) -> None:
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root)
-        if rel.parts and rel.parts[0] in IGNORED_TOP_LEVEL:
-            continue
         if any(part.startswith(".") for part in rel.parts):
             errors.append(f"{rel}: hidden files are not allowed in packaged skills")
 
