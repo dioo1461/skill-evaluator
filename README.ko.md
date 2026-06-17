@@ -135,79 +135,79 @@ Use $skill-evaluator to run a calibrated self-test for this evaluator.
 
 ## 평가 결과 예시
 
-최종 report에는 보통 총점, 신뢰도, 세부 점수, 검증 상태, 보정 상태, 우선순위별 발견 사항, 강점, 추천 변경 사항, 승인 필요한 방향 변경, 가정과 미확인 항목이 포함됩니다.
+최종 report에는 보통 score, confidence, breakdown, validation result, calibration result, findings, strengths, recommended changes, approval-gated direction changes, assumptions가 포함됩니다. 한국어 report에서도 이런 구조 heading은 영어로 유지하고, 판단과 설명은 한국어로 작성됩니다.
 
-### 점수
+### Score
 
-84/100 - 전반적으로 실전형 워크플로가 잘 잡혀 있지만, 최신 저장소 구조와 검증 진입점을 더 정확히 반영해야 합니다.
+84/100 - 전반적으로 실전형 workflow가 잘 잡혀 있지만, 최신 repository 구조와 검증 진입점을 더 정확히 반영해야 합니다.
 
-### 신뢰도
+### Confidence
 
-중간 - `SKILL.md`, `agents/openai.yaml`, 인접 스킬 메타데이터, 대표 저장소 구조를 확인했고 로컬 검증기는 통과했습니다. 실행 추적과 전체 행동 보정은 요청 범위가 아니라 실행하지 않았습니다.
+Medium - `SKILL.md`, `agents/openai.yaml`, 인접 skill metadata, 대표 repository 구조를 확인했고 local validator는 통과했습니다. runtime trace와 전체 behavioral calibration은 요청 범위가 아니라 실행하지 않았습니다.
 
-### 세부 점수
+### Breakdown
 
-| 항목 | 점수 | 메모 |
+| Category | Score | Notes |
 |---|---:|---|
-| 호출 정확도 | 9/12 | 호출 범위는 명확하지만 frontmatter의 비사용 경계가 더 분명하면 좋습니다. |
-| 목표 적합성 및 범위 제어 | 9/10 | 목적이 구체적이고 실무 흐름에 맞습니다. |
-| 워크플로 실행 가능성 | 11/14 | 주요 단계는 구체적이지만 저장소 선택과 캡처 진입점의 대체 동작이 더 명확해야 합니다. |
-| 컨텍스트 관리 | 13/14 | 스킬이 간결하고 번들 리소스 비대화가 없습니다. |
-| 도구 및 리소스 설계 | 8/10 | 도구 지침은 유용하지만 일부 검증 경로가 충분히 결정적이지 않습니다. |
-| 서브에이전트 및 병렬 작업 설계 | 6/8 | 검토자 역할은 분리했지만 사용 가능 여부와 권한 대체 동작이 더 명확해야 합니다. |
-| 검증 및 완료 기준 | 10/12 | 검증 명령과 완료 기준이 대부분 명확합니다. |
-| 실패 처리 및 안전성 | 7/8 | 대체 동작은 문서화되어 있지만 작업 디렉터리 대체 동작 하나가 위험합니다. |
-| 유지보수성 및 메타데이터 | 7/8 | 메타데이터는 유효하지만 일부 구조 참조를 대상 저장소와 계속 맞춰야 합니다. |
-| 출력 품질 및 협업 | 4/4 | 최종 report 구조가 명확하고 읽기 쉽습니다. |
+| Trigger Accuracy | 9/12 | trigger 범위는 명확하지만 frontmatter의 non-use 경계가 더 분명하면 좋습니다. |
+| Goal Fit And Scope Control | 9/10 | 목적이 구체적이고 실무 흐름에 맞습니다. |
+| Workflow Executability | 11/14 | 주요 단계는 구체적이지만 repository 선택과 capture 진입점 fallback이 더 명확해야 합니다. |
+| Context Management | 13/14 | skill이 lean하고 bundled resource bloat가 없습니다. |
+| Tool And Resource Design | 8/10 | tool 지침은 유용하지만 일부 검증 경로가 충분히 deterministic하지 않습니다. |
+| Subagent And Parallel Work Design | 6/8 | reviewer 역할은 분리했지만 사용 가능 여부와 권한 fallback이 더 명확해야 합니다. |
+| Verification And Completion Criteria | 10/12 | 검증 명령과 완료 기준이 대부분 명확합니다. |
+| Failure Handling And Safety | 7/8 | fallback은 문서화되어 있지만 working directory fallback 하나가 위험합니다. |
+| Maintainability And Metadata | 7/8 | metadata는 유효하지만 일부 구조 참조를 target repo와 계속 맞춰야 합니다. |
+| Output Quality And Collaboration | 4/4 | 최종 report 구조가 명확하고 읽기 쉽습니다. |
 
-### 검증 결과
+### Validation Result
 
 - 통과: `python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py /path/to/skill`
 - `agents/openai.yaml` 파싱 성공
-- 대상 구성: `SKILL.md`, `agents/openai.yaml`; 번들 참조 문서나 스크립트 없음
+- 대상 구성: `SKILL.md`, `agents/openai.yaml`; bundled references/scripts 없음
 
-### 보정 결과
+### Calibration Result
 
-- 실행하지 않음. 일반적인 단일 스킬 산출물 평가였고, 보정된 채점이나 배포 준비 검증 요청은 아니었습니다.
+- 실행하지 않음. 일반적인 단일 skill artifact 평가였고, calibrated scoring이나 release-readiness 검증 요청은 아니었습니다.
 
-### 발견 사항
+### Findings
 
-- [P2] `SKILL.md:107` 구현 책임 범위를 대상 저장소의 일부 계층으로만 좁히고 있습니다.
+- [P2] `SKILL.md:107` implementation ownership을 target repository의 일부 layer로만 좁히고 있습니다.
 
-  영향: agent가 UI 코드나 test를 잘못된 계층에 배치할 수 있습니다.
+  Impact: agent가 UI 코드나 test를 잘못된 layer에 배치할 수 있습니다.
 
-  개선: 대상 저장소의 실제 계층 구조와 테스트 배치 규칙을 반영하세요.
+  Improvement: target repository의 실제 layer map과 test-placement convention을 반영하세요.
 
-- [P2] `SKILL.md:60` 저장소 감지가 실패했을 때 현재 디렉터리로 대체합니다.
+- [P2] `SKILL.md:60` repository detection이 실패했을 때 current directory로 fallback합니다.
 
-  영향: log나 검증 명령이 잘못된 디렉터리에서 실행될 수 있습니다.
+  Impact: log나 validation command가 잘못된 디렉터리에서 실행될 수 있습니다.
 
-  개선: 구현 작업에는 유효한 작업트리를 요구하거나 사용자에게 선택을 요청하세요.
+  Improvement: implementation task에는 유효한 worktree를 요구하거나 사용자에게 선택을 요청하세요.
 
-- [P2] `SKILL.md:134` 스크린샷 캡처는 설명하지만 안정적인 대상 화면 진입 전략이 없습니다.
+- [P2] `SKILL.md:134` screenshot capture는 설명하지만 stable target-screen entry 전략이 없습니다.
 
-  영향: agent가 화면에 일관되게 진입하지 못하고 약한 검증으로 너무 빨리 대체할 수 있습니다.
+  Impact: agent가 화면에 일관되게 진입하지 못하고 약한 검증으로 너무 빨리 fallback할 수 있습니다.
 
-  개선: 결정적 route, 개발 화면, 사용자 보조 navigation, 좌표 입력 순서의 짧은 decision tree를 추가하세요.
+  Improvement: deterministic route, dev screen, user-assisted navigation, coordinate input 순서의 짧은 decision tree를 추가하세요.
 
-### 강점
+### Strengths
 
-- 산출물 log 구조와 비교 template이 명확합니다.
+- artifact log 구조와 comparison template이 명확합니다.
 - blank 또는 non-hydrated screenshot 처리 지침이 좋습니다.
 - 검증 명령이 명시적이고 다시 실행하기 쉽습니다.
 
-### 추천 변경 사항
+### Recommended Changes
 
-1. ownership과 테스트 배치 지침을 현재 대상 저장소 구조에 맞추세요.
-2. 구현 또는 log 생성 전에 작업트리 guard를 추가하세요.
-3. 결정적인 스크린샷 대상 화면 진입 지침을 추가하세요.
-4. 서브에이전트 사용 가능 여부와 권한 대체 동작 표현을 명확히 하세요.
+1. ownership과 test-placement 지침을 현재 target repository 구조에 맞추세요.
+2. implementation 또는 log 생성 전에 worktree guard를 추가하세요.
+3. deterministic screenshot target-entry 지침을 추가하세요.
+4. subagent 사용 가능 여부와 권한 fallback 표현을 명확히 하세요.
 
-### 승인 필요한 방향 변경
+### Approval-Gated Direction Changes
 
 - 없음.
 
-### 가정 / 확인하지 못한 부분
+### Assumptions / Unknowns
 
-- 대표 저장소 구조는 확인했지만 모든 branch나 runtime path를 확인하지는 않았습니다.
+- 대표 repository 구조는 확인했지만 모든 branch나 runtime path를 확인하지는 않았습니다.
 - live UI loop나 runtime trace는 실행하지 않았습니다.
