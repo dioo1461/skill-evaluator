@@ -135,35 +135,79 @@ When calibration runs, the answer key must not be opened first. Fixture results 
 
 ## Report Example
 
-Final reports usually include score, confidence, category breakdown, validation status, prioritized findings, recommended changes, and assumptions.
+Final reports usually include score, confidence, category breakdown, validation status, calibration status, prioritized findings, strengths, recommended changes, approval-gated direction changes, and assumptions.
 
-```markdown
-**Score**
-86/100 - Strong skill with a few reliability gaps
+### Score
 
-**Confidence**
-Medium - Local validation passed; behavioral calibration was not run.
+84/100 - Strong practical workflow, with a few gaps around current repository structure and validation entry points.
 
-**Breakdown**
+### Confidence
+
+Medium - `SKILL.md`, `agents/openai.yaml`, adjacent skill metadata, and representative repository structure were inspected. Local validators passed. Runtime traces and full behavioral calibration were not requested.
+
+### Breakdown
+
 | Category | Score | Notes |
 |---|---:|---|
-| Trigger Accuracy | 10/12 | Clear use cases and non-use boundary. |
-| Workflow Executability | 11/14 | Main flow is concrete, but one decision point needs clearer fallback behavior. |
-| Verification And Completion Criteria | 9/12 | Validation is documented, but completion criteria for patched skills could be more explicit. |
+| Trigger Accuracy | 9/12 | The trigger scope is clear, but the frontmatter could state non-use boundaries more explicitly. |
+| Goal Fit And Scope Control | 9/10 | The purpose is focused and practical. |
+| Workflow Executability | 11/14 | The main steps are concrete, but repository selection and capture entry points need clearer fallback behavior. |
+| Context Management | 13/14 | The skill is lean and avoids bundled resource bloat. |
+| Tool And Resource Design | 8/10 | Tool guidance is useful, but one verification path is not deterministic enough. |
+| Subagent And Parallel Work Design | 6/8 | Reviewer responsibility is separated, but availability and permission fallbacks should be clearer. |
+| Verification And Completion Criteria | 10/12 | Validation commands and completion criteria are mostly clear. |
+| Failure Handling And Safety | 7/8 | Fallbacks are documented, but one working-directory fallback is risky. |
+| Maintainability And Metadata | 7/8 | Metadata is valid; a few structure references need to stay aligned with the target repo. |
+| Output Quality And Collaboration | 4/4 | The final report shape is clear and easy to scan. |
 
-**Validation Result**
-- `python3 skill-evaluator/scripts/validate_skill.py skill-evaluator --skip-answer-key`: passed
-- `python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skill-evaluator`: passed
+### Validation Result
 
-**Findings**
-- [P2] `SKILL.md:42` The workflow says to inspect referenced resources, but does not define what to do when a referenced file is missing.
-  Impact: Evaluation reports may treat missing optional resources inconsistently.
-  Improvement: Add a fallback rule that distinguishes optional missing resources from required missing resources.
+- Passed: `python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py /path/to/skill`
+- `agents/openai.yaml` parsed successfully.
+- Target inventory: `SKILL.md`, `agents/openai.yaml`; no bundled references or scripts.
 
-**Recommended Changes**
-1. Clarify fallback behavior for missing referenced files.
-2. Add a short done-condition checklist for patch mode.
+### Calibration Result
 
-**Assumptions / Unknowns**
-- Behavioral calibration was not requested for this run.
-```
+- Not run. This was a normal single-skill artifact evaluation, not calibrated scoring or release-readiness verification.
+
+### Findings
+
+- [P2] `SKILL.md:107` narrows implementation ownership to only a subset of the target repository layers.
+
+  Impact: Agents may place UI code or tests in the wrong layer.
+
+  Improvement: Mirror the target repository's actual layer map and test-placement convention.
+
+- [P2] `SKILL.md:60` falls back to the current directory when repository detection fails.
+
+  Impact: Logs or validation commands may run in the wrong directory.
+
+  Improvement: Require a valid worktree for implementation tasks, or ask the user to select one.
+
+- [P2] `SKILL.md:134` describes screenshot capture, but does not define a stable target-screen entry strategy.
+
+  Impact: Agents may reach screens inconsistently and fall back to weaker validation too early.
+
+  Improvement: Add a short decision tree for deterministic routes, dev screens, user-assisted navigation, and coordinate input.
+
+### Strengths
+
+- Clear artifact log structure and comparison template.
+- Good handling for blank or non-hydrated screenshots.
+- Verification commands are explicit and easy to rerun.
+
+### Recommended Changes
+
+1. Update ownership and test-placement guidance to match the current target repository.
+2. Add a worktree guard before implementation or log creation.
+3. Add deterministic screenshot target-entry guidance.
+4. Clarify subagent availability and permission fallback behavior.
+
+### Approval-Gated Direction Changes
+
+- None.
+
+### Assumptions / Unknowns
+
+- Representative repository structure was inspected, but not every branch or runtime path.
+- No live UI loop or runtime trace was executed.

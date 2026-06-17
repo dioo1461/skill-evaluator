@@ -135,35 +135,79 @@ Calibration을 실행할 때는 answer key를 먼저 열지 않아야 합니다.
 
 ## 평가 결과 예시
 
-최종 report에는 보통 총점, confidence, category별 점수, validation 상태, 우선순위별 finding, 추천 변경 사항, assumptions가 포함됩니다.
+최종 report에는 보통 총점, confidence, category별 점수, validation 상태, calibration 상태, 우선순위별 finding, strengths, 추천 변경 사항, 승인 필요한 방향 변경, assumptions가 포함됩니다.
 
-```markdown
-**점수**
-86/100 - 전반적으로 강한 skill이지만 몇 가지 신뢰성 보완이 필요합니다.
+### 점수
 
-**신뢰도**
-중간 - 로컬 검증은 통과했지만 behavioral calibration은 실행하지 않았습니다.
+84/100 - 전반적으로 실전형 workflow가 잘 잡혀 있지만, 최신 repository 구조와 검증 진입점을 더 정확히 반영해야 합니다.
 
-**분류별 점수**
+### 신뢰도
+
+중간 - `SKILL.md`, `agents/openai.yaml`, 인접 skill metadata, 대표 repository 구조를 확인했고 local validator는 통과했습니다. runtime trace와 전체 behavioral calibration은 요청 범위가 아니라 실행하지 않았습니다.
+
+### 분류별 점수
+
 | 항목 | 점수 | 메모 |
 |---|---:|---|
-| Trigger Accuracy | 10/12 | 사용 조건과 비사용 조건이 명확합니다. |
-| Workflow Executability | 11/14 | 주요 흐름은 구체적이지만 일부 분기에서 fallback 동작이 더 명확해야 합니다. |
-| Verification And Completion Criteria | 9/12 | 검증 방법은 문서화되어 있지만 patch 후 완료 기준이 더 구체적이면 좋습니다. |
+| Trigger Accuracy | 9/12 | trigger 범위는 명확하지만 frontmatter의 non-use 경계가 더 분명하면 좋습니다. |
+| Goal Fit And Scope Control | 9/10 | 목적이 구체적이고 실무 흐름에 맞습니다. |
+| Workflow Executability | 11/14 | 주요 단계는 구체적이지만 repository 선택과 capture 진입점 fallback이 더 명확해야 합니다. |
+| Context Management | 13/14 | skill이 lean하고 bundled resource bloat가 없습니다. |
+| Tool And Resource Design | 8/10 | tool 지침은 유용하지만 일부 검증 경로가 충분히 결정적이지 않습니다. |
+| Subagent And Parallel Work Design | 6/8 | reviewer 역할은 분리했지만 사용 가능 여부와 권한 fallback이 더 명확해야 합니다. |
+| Verification And Completion Criteria | 10/12 | 검증 명령과 완료 기준이 대부분 명확합니다. |
+| Failure Handling And Safety | 7/8 | fallback은 문서화되어 있지만 working directory fallback 하나가 위험합니다. |
+| Maintainability And Metadata | 7/8 | metadata는 유효하지만 일부 구조 참조를 target repo와 계속 맞춰야 합니다. |
+| Output Quality And Collaboration | 4/4 | 최종 report 구조가 명확하고 읽기 쉽습니다. |
 
-**검증 결과**
-- `python3 skill-evaluator/scripts/validate_skill.py skill-evaluator --skip-answer-key`: 통과
-- `python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skill-evaluator`: 통과
+### 검증 결과
 
-**Findings**
-- [P2] `SKILL.md:42` workflow가 참조 파일을 확인하라고 안내하지만, 참조 파일이 없을 때 어떻게 처리할지 정의하지 않습니다.
-  영향: 평가 report가 누락된 optional resource를 일관되지 않게 다룰 수 있습니다.
-  개선: optional resource와 required resource가 없을 때의 fallback 규칙을 분리해 추가하세요.
+- 통과: `python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py /path/to/skill`
+- `agents/openai.yaml` 파싱 성공
+- 대상 구성: `SKILL.md`, `agents/openai.yaml`; bundled references/scripts 없음
 
-**추천 변경 사항**
-1. 누락된 참조 파일에 대한 fallback 동작을 명확히 하세요.
-2. patch mode의 완료 조건 checklist를 짧게 추가하세요.
+### Calibration 결과
 
-**가정 / 확인하지 못한 부분**
-- 이번 실행에서는 behavioral calibration을 요청하지 않았습니다.
-```
+- 실행하지 않음. 일반적인 단일 skill artifact 평가였고, calibrated scoring이나 release-readiness 검증 요청은 아니었습니다.
+
+### Findings
+
+- [P2] `SKILL.md:107` implementation ownership을 target repository의 일부 layer로만 좁히고 있습니다.
+
+  영향: agent가 UI 코드나 test를 잘못된 layer에 배치할 수 있습니다.
+
+  개선: target repository의 실제 layer map과 test-placement convention을 반영하세요.
+
+- [P2] `SKILL.md:60` repository detection이 실패했을 때 current directory로 fallback합니다.
+
+  영향: log나 validation command가 잘못된 디렉터리에서 실행될 수 있습니다.
+
+  개선: implementation task에는 유효한 worktree를 요구하거나 사용자에게 선택을 요청하세요.
+
+- [P2] `SKILL.md:134` screenshot capture는 설명하지만 stable target-screen entry 전략이 없습니다.
+
+  영향: agent가 화면에 일관되게 진입하지 못하고 약한 검증으로 너무 빨리 fallback할 수 있습니다.
+
+  개선: deterministic route, dev screen, user-assisted navigation, coordinate input 순서의 짧은 decision tree를 추가하세요.
+
+### Strengths
+
+- artifact log 구조와 comparison template이 명확합니다.
+- blank 또는 non-hydrated screenshot 처리 지침이 좋습니다.
+- 검증 명령이 명시적이고 다시 실행하기 쉽습니다.
+
+### 추천 변경 사항
+
+1. ownership과 test-placement 지침을 현재 target repository 구조에 맞추세요.
+2. implementation 또는 log 생성 전에 worktree guard를 추가하세요.
+3. deterministic screenshot target-entry 지침을 추가하세요.
+4. subagent 사용 가능 여부와 권한 fallback 표현을 명확히 하세요.
+
+### 승인 필요한 방향 변경
+
+- 없음.
+
+### 가정 / 확인하지 못한 부분
+
+- 대표 repository 구조는 확인했지만 모든 branch나 runtime path를 확인하지는 않았습니다.
+- live UI loop나 runtime trace는 실행하지 않았습니다.
