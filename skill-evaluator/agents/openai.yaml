@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Evaluator"
+  short_description: "Evaluate Codex skill implementations"
+  default_prompt: "Use $skill-evaluator to score this existing Codex skill implementation, report validation status, and apply evaluation findings only when explicitly requested."

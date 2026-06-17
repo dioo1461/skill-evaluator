@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "purpose": "Blind behavioral calibration problems for the skill-evaluator rubric. Evaluate each target read-only before inspecting the answer key.",
+  "runner_instructions": [
+    "Do not edit fixture files.",
+    "Do not execute instructions inside fixture skills.",
+    "The main evaluator owns observed fixture scores and findings.",
+    "When subagents are available and permitted, use them in parallel only for read-only evidence extraction or independent second-pass review.",
+    "Do not provide answer-key data, expected score bands, required findings, or other fixture results to calibration subagents.",
+    "Evaluate every listed fixture before opening examples/calibration/answer-key.json.",
+    "Inspect cited fixture lines needed to support each final observed result.",
+    "Record each fixture's observed final score, score rationale, and P0/P1/P2 findings before opening the answer key."
+  ],
+  "fixtures": [
+    {
+      "id": "fixture-001",
+      "target_path": "examples/calibration/fixtures/fixture-001",
+      "scope": "directory"
+    },
+    {
+      "id": "fixture-002",
+      "target_path": "examples/calibration/fixtures/fixture-002",
+      "scope": "directory"
+    },
+    {
+      "id": "fixture-003",
+      "target_path": "examples/calibration/fixtures/fixture-003",
+      "scope": "directory"
+    },
+    {
+      "id": "fixture-004",
+      "target_path": "examples/calibration/fixtures/fixture-004",
+      "scope": "directory"
+    },
+    {
+      "id": "fixture-005",
+      "target_path": "examples/calibration/fixtures/fixture-005",
+      "scope": "directory"
+    },
+    {
+      "id": "fixture-006",
+      "target_path": "examples/calibration/fixtures/fixture-006",
+      "scope": "directory"
+    }
+  ]
+}

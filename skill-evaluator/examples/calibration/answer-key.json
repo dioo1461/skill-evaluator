@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "purpose": "Answer key for behavioral calibration fixtures. Inspect only after observed fixture scores and findings have been drafted from problems.json.",
+  "grading_instructions": [
+    "Report observed final score, score band match, and required finding matches for every fixture.",
+    "A score outside the expected band is acceptable only when the evaluator cites stronger file evidence than the answer-key expectation.",
+    "Treat answer-key inspection before observed results are drafted as a calibration limitation."
+  ],
+  "fixtures": [
+    {
+      "id": "fixture-001",
+      "expected_score_band": [92, 100],
+      "required_findings": [],
+      "expected_strengths": [
+        "clear trigger and non-use boundary",
+        "ordered workflow with validation gates",
+        "metadata aligned with the skill purpose"
+      ]
+    },
+    {
+      "id": "fixture-002",
+      "expected_score_band": [40, 68],
+      "required_findings": [
+        {
+          "priority": "P1",
+          "category": "Trigger Accuracy",
+          "must_include": ["frontmatter description", "ordinary project work"]
+        },
+        {
+          "priority": "P2",
+          "category": "Goal Fit And Scope Control",
+          "must_include": ["unbounded", "adjacent tasks"]
+        }
+      ]
+    },
+    {
+      "id": "fixture-003",
+      "expected_score_band": [55, 78],
+      "required_findings": [
+        {
+          "priority": "P1",
+          "category": "Verification And Completion Criteria",
+          "must_include": ["no validation", "done condition"]
+        },
+        {
+          "priority": "P2",
+          "category": "Workflow Executability",
+          "must_include": ["requires guessing", "steps"]
+        }
+      ]
+    },
+    {
+      "id": "fixture-004",
+      "expected_score_band": [20, 48],
+      "required_findings": [
+        {
+          "priority": "P0",
+          "category": "Failure Handling And Safety",
+          "must_include": ["destructive", "confirmation"]
+        },
+        {
+          "priority": "P1",
+          "category": "Tool And Resource Design",
+          "must_include": ["external upload", "secrets"]
+        }
+      ]
+    },
+    {
+      "id": "fixture-005",
+      "expected_score_band": [58, 80],
+      "required_findings": [
+        {
+          "priority": "P2",
+          "category": "Context Management",
+          "must_include": ["inline examples", "move to references"]
+        },
+        {
+          "priority": "P2",
+          "category": "Output Quality And Collaboration",
+          "must_include": ["long final report", "hard to scan"]
+        }
+      ]
+    },
+    {
+      "id": "fixture-006",
+      "expected_score_band": [70, 86],
+      "required_findings": [
+        {
+          "priority": "P2",
+          "category": "Maintainability And Metadata",
+          "must_include": ["agents/openai.yaml", "stale"]
+        },
+        {
+          "priority": "P2",
+          "category": "Trigger Accuracy",
+          "must_include": ["metadata", "wrong skill"]
+        }
+      ]
+    }
+  ]
+}

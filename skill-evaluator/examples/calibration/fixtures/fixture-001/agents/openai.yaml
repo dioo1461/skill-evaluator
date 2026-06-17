@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Note Auditor"
+  short_description: "Audit release-note drafts against shipped changes"
+  default_prompt: "Use $release-note-auditor to verify this release-note draft against shipped changes and report blockers first."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recipe Planner"
+  short_description: "Plan weeknight recipes from pantry ingredients"
+  default_prompt: "Use $recipe-planner to create a weeknight dinner plan from these ingredients."
