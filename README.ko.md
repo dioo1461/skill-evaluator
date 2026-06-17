@@ -53,7 +53,7 @@ rm -rf "$tmpdir"
 
 이미 설치한 경우에도 같은 설치 명령을 다시 실행하면 됩니다.
 
-이후 Codex를 새로 시작하거나 skill 목록을 다시 로드한 뒤 `$skill-evaluator`를 호출합니다. 설치된 skill 디렉터리에는 `~/.codex/skills/skill-evaluator/SKILL.md`가 직접 있어야 합니다.
+이후 Codex를 새로 시작하거나 skill 목록을 다시 로드한 뒤 `$skill-evaluator`를 호출합니다.
 
 ## 사용 예시
 

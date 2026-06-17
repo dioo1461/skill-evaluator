@@ -53,7 +53,7 @@ rm -rf "$tmpdir"
 
 To update an existing installation, run the same install commands again.
 
-Restart Codex or reload your skills, then invoke `$skill-evaluator`. The installed skill directory should contain `SKILL.md` directly at `~/.codex/skills/skill-evaluator/SKILL.md`.
+Restart Codex or reload your skills, then invoke `$skill-evaluator`.
 
 ## Usage Examples
 
