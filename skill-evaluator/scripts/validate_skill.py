@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Read-only structural validator for Codex skill directories.
 
-The script intentionally uses only the Python standard library and performs no
-filesystem writes. It is designed as a deterministic baseline check for the
-skill-evaluator skill and compatible skill directories.
+The script performs no filesystem writes. It uses PyYAML for full YAML parsing
+when available, with a small dependency-free fallback for simple packaged skill
+metadata. It is designed as the deterministic baseline check for this skill-
+evaluator package and skill directories that intentionally use the same
+evaluator resource contract.
 """
 
 from __future__ import annotations
@@ -14,9 +16,24 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import yaml as _yaml
+except ImportError:  # pragma: no cover - exercised only in minimal runtimes.
+    _yaml = None
 
-ALLOWED_TOP_LEVEL = {"SKILL.md", "agents", "references", "scripts", "examples"}
-IGNORED_TOP_LEVEL = {".git"}
+ALLOWED_TOP_LEVEL = {
+    "SKILL.md",
+    "LICENSE",
+    "LICENSE.txt",
+    "license.txt",
+    "agents",
+    "assets",
+    "examples",
+    "references",
+    "resources",
+    "scripts",
+    "templates",
+}
 REQUIRED_REFERENCES = {
     "references/scoring-guide.md",
     "references/report-format.md",
@@ -36,9 +53,10 @@ KNOWN_CATEGORIES = {
     "Output Quality And Collaboration",
 }
 KNOWN_PRIORITIES = {"P0", "P1", "P2", "P3"}
-PATH_TOKEN_RE = re.compile(r"`((?:agents|examples|references|scripts)/[^`]+)`")
+PATH_TOKEN_RE = re.compile(r"`((?:agents|assets|examples|references|resources|scripts|templates)/[^`]+)`")
 CALIBRATION_ID_RE = re.compile(r"^fixture-\d{3}$")
 CALIBRATION_ANSWER_FIELDS = {"expected_score_band", "required_findings", "expected_strengths"}
+SECTION_HEADING_RE = re.compile(r"^##\s+", re.MULTILINE)
 SCRIPT_WRITE_PATTERNS = [
     re.compile(pattern)
     for pattern in (
@@ -53,6 +71,25 @@ SCRIPT_WRITE_PATTERNS = [
         r"\bsubprocess\.[^(]+\([^)]*(?:rm\s+-rf|git\s+push|gh\s+pr\s+create)",
     )
 ]
+TARGET_SCORE_CONTRACT_TERMS = {
+    "section": "## Target-Score Goal Loops",
+    "compact invocation without space": "/goal $skill-evaluator objective: 95",
+    "compact invocation with space": "/goal $ skill-evaluator objective: 95",
+    "explicit target example": "target: ./my-skill objective: 95",
+    "target score objective field": "objective",
+    "target score score field": "score",
+    "target score target_score field": "target_score",
+    "target scope fields": "target`, `path`, `scope",
+    "ambiguous scope clarification": "ask one concise question",
+    "patch mode": "references/patch-mode.md",
+    "backup requirement": "backup",
+    "fresh read-only subagent": "fresh read-only evaluator subagent",
+    "main owns edits": "main agent owns edits",
+    "stop conditions": "Repeat until",
+    "goal completion": "mark the goal complete",
+    "blocked lifecycle": "blocked criteria",
+    "anti score chasing": "Do not weaken the rubric",
+}
 
 
 def read_text(path: Path, errors: list[str]) -> str:
@@ -65,7 +102,51 @@ def read_text(path: Path, errors: list[str]) -> str:
     return ""
 
 
-def parse_frontmatter(text: str, errors: list[str]) -> dict[str, str]:
+def section_text(markdown: str, heading: str) -> str:
+    start = markdown.find(heading)
+    if start == -1:
+        return ""
+    next_heading = SECTION_HEADING_RE.search(markdown, start + len(heading))
+    end = next_heading.start() if next_heading else len(markdown)
+    return markdown[start:end]
+
+
+def parse_simple_yaml_mapping(source_name: str, text: str, errors: list[str]) -> dict[str, object]:
+    """Parse the limited key/value YAML subset used by simple skill metadata."""
+
+    fields: dict[str, object] = {}
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[:1].isspace():
+            errors.append(f"{source_name}: nested YAML requires PyYAML")
+            continue
+        if ":" not in line:
+            errors.append(f"{source_name}: unsupported YAML line {line!r}")
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        fields[key] = value
+    return fields
+
+
+def parse_yaml_mapping(source_name: str, text: str, errors: list[str]) -> dict[str, object]:
+    if _yaml is not None:
+        try:
+            parsed = _yaml.safe_load(text) or {}
+        except Exception as exc:  # PyYAML exposes several parser exception types.
+            errors.append(f"{source_name}: invalid YAML: {exc}")
+            return {}
+        if not isinstance(parsed, dict):
+            errors.append(f"{source_name}: YAML document must be a mapping")
+            return {}
+        return parsed
+
+    return parse_simple_yaml_mapping(source_name, text, errors)
+
+
+def parse_frontmatter(text: str, errors: list[str]) -> dict[str, object]:
     if not text.startswith("---\n"):
         errors.append("SKILL.md: missing opening YAML frontmatter fence")
         return {}
@@ -75,38 +156,35 @@ def parse_frontmatter(text: str, errors: list[str]) -> dict[str, str]:
         errors.append("SKILL.md: missing closing YAML frontmatter fence")
         return {}
 
-    fields: dict[str, str] = {}
-    for line in text[4:end].splitlines():
-        if not line.strip():
-            continue
-        if ":" not in line:
-            errors.append(f"SKILL.md frontmatter: unsupported line {line!r}")
-            continue
-        key, value = line.split(":", 1)
-        key = key.strip()
-        value = value.strip().strip("\"'")
-        fields[key] = value
-    return fields
+    return parse_yaml_mapping("SKILL.md frontmatter", text[4:end], errors)
 
 
-def parse_interface_yaml(path: Path, errors: list[str]) -> dict[str, str]:
+def parse_interface_yaml(path: Path, errors: list[str]) -> dict[str, object]:
     text = read_text(path, errors)
-    values: dict[str, str] = {}
-    in_interface = False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if stripped == "interface:":
-            in_interface = True
-            continue
-        if in_interface:
-            match = re.match(r"^\s{2}([A-Za-z_][A-Za-z0-9_]*):\s*(.+?)\s*$", line)
-            if match:
-                values[match.group(1)] = match.group(2).strip().strip("\"'")
-            elif not line.startswith(" "):
-                in_interface = False
-    return values
+    if _yaml is None:
+        values: dict[str, object] = {}
+        in_interface = False
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if stripped == "interface:":
+                in_interface = True
+                continue
+            if in_interface:
+                match = re.match(r"^\s{2}([A-Za-z_][A-Za-z0-9_]*):\s*(.+?)\s*$", line)
+                if match:
+                    values[match.group(1)] = match.group(2).strip().strip("\"'")
+                elif not line.startswith(" "):
+                    in_interface = False
+        return values
+
+    parsed = parse_yaml_mapping("agents/openai.yaml", text, errors)
+    interface = parsed.get("interface")
+    if not isinstance(interface, dict):
+        errors.append("agents/openai.yaml: interface must be a mapping")
+        return {}
+    return interface
 
 
 def check_frontmatter(root: Path, errors: list[str]) -> None:
@@ -122,15 +200,13 @@ def check_frontmatter(root: Path, errors: list[str]) -> None:
             errors.append(f"SKILL.md frontmatter: {key!r} must be a non-empty string")
 
     description = fields.get("description", "")
-    if "Do not use" not in description and "not use" not in description.lower():
+    if isinstance(description, str) and "Do not use" not in description and "not use" not in description.lower():
         errors.append("SKILL.md frontmatter: description should include a non-use boundary")
 
 
 def check_top_level(root: Path, errors: list[str]) -> None:
     for child in sorted(root.iterdir()):
         name = child.name
-        if name in IGNORED_TOP_LEVEL:
-            continue
         if name.startswith("."):
             errors.append(f"{child.relative_to(root)}: hidden files are not allowed in packaged skills")
         elif name not in ALLOWED_TOP_LEVEL:
@@ -140,8 +216,6 @@ def check_top_level(root: Path, errors: list[str]) -> None:
 def check_hidden_files(root: Path, errors: list[str]) -> None:
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root)
-        if rel.parts and rel.parts[0] in IGNORED_TOP_LEVEL:
-            continue
         if any(part.startswith(".") for part in rel.parts):
             errors.append(f"{rel}: hidden files are not allowed in packaged skills")
 
@@ -153,11 +227,23 @@ def check_metadata(root: Path, errors: list[str]) -> None:
     values = parse_interface_yaml(metadata, errors)
     for key in ("display_name", "short_description", "default_prompt"):
         value = values.get(key)
-        if not value:
+        if not isinstance(value, str) or not value.strip():
             errors.append(f"agents/openai.yaml: interface.{key} must be a non-empty string")
     prompt = values.get("default_prompt", "")
-    if "$skill-evaluator" not in prompt and "skill" not in prompt.lower():
+    if isinstance(prompt, str) and "$skill-evaluator" not in prompt and "skill" not in prompt.lower():
         errors.append("agents/openai.yaml: default_prompt appears stale for a skill evaluator")
+
+
+def check_target_score_goal_loop(root: Path, errors: list[str]) -> None:
+    text = read_text(root / "SKILL.md", errors)
+    target_section = section_text(text, "## Target-Score Goal Loops")
+    if not target_section:
+        errors.append("SKILL.md: missing Target-Score Goal Loops section")
+        return
+
+    for label, required_text in TARGET_SCORE_CONTRACT_TERMS.items():
+        if required_text not in target_section:
+            errors.append(f"SKILL.md Target-Score Goal Loops: missing {label}: {required_text!r}")
 
 
 def check_referenced_paths(root: Path, errors: list[str]) -> None:
@@ -200,9 +286,12 @@ def check_script_safety(root: Path, errors: list[str]) -> None:
 
 def check_size_hygiene(root: Path, errors: list[str], warnings: list[str]) -> None:
     for path in sorted(root.rglob("*")):
+        rel = path.relative_to(root)
+        if path.name == "__pycache__" or path.suffix in {".pyc", ".pyo"}:
+            errors.append(f"{rel}: generated Python bytecode artifacts are not allowed in packaged skills")
+            continue
         if not path.is_file():
             continue
-        rel = path.relative_to(root)
         if path.stat().st_size > 512_000:
             errors.append(f"{rel}: file is larger than 512 KiB")
             continue
@@ -383,6 +472,7 @@ def validate(root: Path, *, validate_answer_key: bool = True) -> tuple[list[str]
     check_top_level(root, errors)
     check_hidden_files(root, errors)
     check_metadata(root, errors)
+    check_target_score_goal_loop(root, errors)
     check_referenced_paths(root, errors)
     check_script_safety(root, errors)
     check_size_hygiene(root, errors, warnings)
@@ -391,7 +481,9 @@ def validate(root: Path, *, validate_answer_key: bool = True) -> tuple[list[str]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate Codex skill structure without modifying files.")
+    parser = argparse.ArgumentParser(
+        description="Validate the skill-evaluator package structure without modifying files."
+    )
     parser.add_argument("skill_dir", type=Path, help="Path to the skill directory")
     parser.add_argument(
         "--skip-answer-key",

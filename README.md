@@ -11,6 +11,8 @@ Skill Evaluator is a Codex skill for evaluating existing Codex skill implementat
 - Reports prioritized P0/P1/P2/P3 findings.
 - Keeps evaluation read-only by default.
 - Applies fixes only when the user explicitly asks for patching or improvement.
+- Supports `/goal` target-score loops that evaluate, patch, validate, and repeat until the requested score is reached or a blocker is found.
+- Creates a timestamped backup before editing local skill artifacts in patch mode.
 
 ## When To Use
 
@@ -83,17 +85,39 @@ Use $skill-evaluator to review this skill diff and report validation status.
 
 ## Improve Until A Target Score
 
-Use Codex `/goal` when you want a validation-fix loop until the skill reaches a target score. Ask for every validation pass to use a fresh read-only subagent, while the main agent applies fixes and integrates results.
+Use Codex `/goal` when you want a validation-fix loop until the skill reaches a target score. In a goal loop, `$skill-evaluator` records the starting score, applies scoped P0/P1/P2 fixes when patching is allowed, revalidates, and repeats until the target score is reached, no safe scoped fixes remain, a direction-level change needs approval, validation cannot run, or another blocker is found.
+
+Every validation pass should use a fresh read-only evaluator subagent when subagents are available. The subagent returns evidence, scores, and recommendations only; the main agent owns edits, final scoring, and conflict resolution.
 
 ```text
 /goal Use $skill-evaluator to evaluate ./my-skill and improve it until it reaches at least {target score}/100. For every validation pass, launch a fresh read-only subagent, apply the recommended fixes, and repeat the loop until the target score is reached or a blocker is found.
 ```
 
-Example with a 90-point target:
+Compact forms are also supported:
 
 ```text
-/goal Use $skill-evaluator to evaluate ./my-skill and improve it until it reaches at least 90/100. For every validation pass, launch a fresh read-only subagent, apply the recommended fixes, and repeat the loop until the target score is reached or a blocker is found.
+/goal $skill-evaluator target: ./my-skill objective: 95
+/goal $skill-evaluator path: ./my-skill score: 99
+/goal Use $skill-evaluator to improve ./my-skill until 95/100
 ```
+
+If only a numeric score is supplied, the evaluated skill scope is inferred only when there is exactly one unambiguous local skill path, pasted skill, or recently discussed evaluated skill. Otherwise, Codex asks for the target path or content.
+
+## Patch Backups
+
+When `$skill-evaluator` edits a local skill artifact, it creates a timestamped backup before the first edit. Backups are stored outside the evaluated skill directory, preferably under:
+
+```text
+$CODEX_HOME/skill-backups/<skill-name>/<timestamp>/
+```
+
+If `$CODEX_HOME` is unavailable, it falls back to:
+
+```text
+~/.codex/skill-backups/<skill-name>/<timestamp>/
+```
+
+Backups preserve relative paths for edited files. For broad or uncertain edits, the whole skill directory may be backed up. If backup creation fails, the evaluator does not edit local artifacts unless the target is pasted content, remote-only content, a diff without local source files, or the user explicitly approves proceeding without a backup. Final patch summaries report the backup path, skipped-backup reason, or backup failure.
 
 ## Validation
 

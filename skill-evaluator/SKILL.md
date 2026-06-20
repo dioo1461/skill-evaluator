@@ -1,6 +1,6 @@
 ---
 name: skill-evaluator
-description: Score, audit, compare, or fix evaluation findings in existing Codex skill implementations, including SKILL.md files, agents/openai.yaml metadata, resources, diffs, PRs, and execution traces. Do not use for creating new skills from scratch, ordinary code/document/prompt reviews, or generic product planning.
+description: Score, audit, compare, or fix evaluation findings in existing Codex skill implementations, including target-score goal loops for SKILL.md files, metadata, resources, diffs, PRs, and execution traces. Do not use for creating new skills from scratch, ordinary code/document/prompt reviews, or generic product planning.
 ---
 
 # Skill Evaluator
@@ -22,6 +22,38 @@ Accept any of these scopes:
 - A skill execution trace, if the user wants behavior-level evaluation.
 
 If the target skill is not specified and cannot be inferred, ask one concise question for the path or content.
+
+## Target-Score Goal Loops
+
+When the user invokes this skill through `/goal` or asks to improve a skill until it reaches a numeric score, treat it as explicit authorization to evaluate, patch, validate, and repeat until a stop condition is met.
+
+Recognize compact forms such as:
+
+```text
+/goal $skill-evaluator objective: 95
+/goal $ skill-evaluator objective: 95
+/goal $skill-evaluator target: ./my-skill objective: 95
+/goal Use $skill-evaluator to improve ./my-skill until 95/100
+```
+
+Interpret compact fields this way:
+
+- Treat `$skill-evaluator` and `$ skill-evaluator` as the same invocation form.
+- `objective`, `score`, or `target_score` with a number from `0` to `100` is the target score.
+- `target`, `path`, `scope`, or an explicit path-like token is the evaluated skill scope.
+- If only a number is given, infer the target scope from exactly one unambiguous local skill path, pasted skill, or most recently discussed evaluated skill in the current conversation. If the scope is ambiguous or stale, ask one concise question for the target path or content.
+- If no target score is supplied, ask one concise question for the numeric target. Do not default silently.
+
+For target-score loops:
+
+1. Create or continue the goal with an expanded objective that names the target scope, target score, validation expectations, and stop conditions.
+2. Run the normal evaluation workflow and record the current score before editing.
+3. If the current score is below target and scoped fixes are allowed, load `references/patch-mode.md`, create the required backup for local artifacts, apply the highest-priority P0/P1/P2 fixes first, then revalidate.
+4. For every validation pass, launch a fresh read-only evaluator subagent when subagents are available and permitted by the current tool policy. If the policy requires explicit user authorization, an explicit goal request for fresh validation subagents satisfies that condition. The subagent returns evidence, scores, and P0/P1/P2 recommendations only; the main agent owns edits, final scoring, and conflict resolution.
+5. If subagents are unavailable or not permitted, run a non-independent self-review pass, label the confidence risk, and continue only when the evidence is still sufficient.
+6. Repeat until the target score is reached, no safe scoped fixes remain, a direction-level change needs user approval, validation cannot run, or another blocker is found.
+7. When a host goal is active, close the loop according to the host goal lifecycle: mark the goal complete only when the target score is reached, and report early blockers without marking blocked unless the host's blocked criteria are satisfied.
+8. Do not weaken the rubric, hide validation gaps, ignore required findings, or make cosmetic score-chasing edits solely to reach the target.
 
 ## Reference Loading
 
